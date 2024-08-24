@@ -10,7 +10,6 @@ import yaml
 from datetime import datetime
 import re 
 
-
 def send_message(prompt: str) -> dict:
     """Calls the REST API and returns the response."""
     request_body = {
@@ -172,14 +171,9 @@ def generate_column_description(database_name, schema_name, table_name, columns,
     "Here is a concise business description for the COGS column Represents the cost of goods sold"
     """
 
-
-    # Debug: Print the prompt
-
     # Create the SQL query
     query = f"""SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3-70b', '{prompt.replace("'", "''")}') as response;"""
-
-    # Debug: Print the query
-    # Execute the query
+    
     generated_description = session.sql(query).collect()
     
     return re.sub('[^A-Za-z0-9]+', ' ', generated_description[0]['RESPONSE']).replace('"', "").strip().replace('\n', ' ')
@@ -199,10 +193,7 @@ def generate_table_description(database_name, schema_name, table_name, column_de
     Focus solely on the business purpose and usage of the table. 
     Do not include any introductory phrases.
     """
-
-
-    # Debug: Print the prompt
-
+    
     # Create the SQL query
     query = f"""SELECT SNOWFLAKE.CORTEX.COMPLETE('llama3-70b', '{prompt.replace("'", "''")}') as response;"""
 
@@ -227,11 +218,11 @@ Users can select databases, schemas, and tables, and the tool auto-fills the YAM
 
 The generated files can be downloaded or uploaded to a stage for use in creating semantic models for Cortex Analyst. 
 
-_While it quickly populates most required fields, some additional details could be added to get more accurate responses (such as: filters, verified_queries ...)_
+_While it quickly populates most required fields, some additional details could be added to get even better responses (such as: filters, verified_queries ...)_
 
 #### Instructions
 
-1. **Get Started Page:**
+1. **Getting Started Page:**
    - Enter Semantic Name: Input the name of your semantic model.
    - Enter Description: Provide a detailed description of the semantic model.
    - Click on "Save Semantic Model Info" to save the details and proceed to the Table Definition page.
@@ -240,7 +231,7 @@ _While it quickly populates most required fields, some additional details could 
    - Select Database: Choose the database from the dropdown menu.
    - Select Schema: Select the schema associated with the chosen database.
    - Select Table: Pick the table you want to include in the YAML file. 
-   - Click on "Add Table to YAML" to add the selected table to the YAML structure. The YAML display will be updated accordingly.
+   - Click on "Add Table to YAML" to add the selected table to the YAML structure. The YAML display will be updated accordingly. Table and column descriptions are generated using the *Llama3-70b* model via the [COMPLETE](https://docs.snowflake.com/en/user-guide/snowflake-cortex/llm-functions#label-cortex-llm-complete) function, a feature of [Cortex LLM](https://docs.snowflake.com/en/user-guide/snowflake-cortex/llm-functions).
    - Upload YAML to Stage: Once your tables are added, you can upload the generated YAML file by clicking on the "Upload to Stage" button.
    - You can also Download the YAML file to your local machine by clicking on the "Download YAML file" button.
 
@@ -248,7 +239,6 @@ _While it quickly populates most required fields, some additional details could 
    - Once the YAML file is uploaded, you can use Cortex Analyst's conversational interface to interact with selected tables, generating accurate SQL queries and interpretations.
 
 4. **Reset Application:**
-   - Navigate to the "Reset" page from the sidebar.
    - Click the "Reset" button to clear all saved data and reset the application to its initial state.
 
 For further details, refer to the [Snowflake Documentation](https://docs.snowflake.com/LIMITEDACCESS/snowflake-cortex/semantic-model-spec#label-semantic-model-tips).
@@ -259,7 +249,7 @@ st.image("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTGtsjtT26xLbvGO_
 
 
 def show_get_started_page():
-    st.title("Get Started")
+    st.title("Getting Started")
     semantic_name = st.text_input("Enter Semantic Name")
     description = st.text_area("Enter Description of Semantic Model")
     if st.button("Save Semantic Model Info"):
@@ -382,28 +372,10 @@ def show_table_definition_page():
                 "dimensions": [],
                 "time_dimensions": [],
                 "measures": []
-           #     "filters": [
-           #         {
-           #             "name": "<name>",
-           #             "synonyms": ["<array of strings>"],
-           #             "description": "<string>",
-           #             "expr": "<SQL expression>"
-           #         }
-           #     ]
             }
 
             # Check for time dimensions, dimension columns, and measure columns
             for column, data_type, column_description, unique_column, sample_value in zip(columns, data_types, ai_generated_column_descriptions, unique_columns, sample_values):
-                # if data_type.lower() == "date":
-                #     time_dimension_entry = {
-                #         "name": column,
-                #         "expr": column,
-                #         "description": "<string>",
-                #         "unique": True,
-                #         "data_type": "date",
-                #         "synonyms": ["<array of strings>"]
-                #     }
-                #     table_entry["time_dimensions"].append(time_dimension_entry)
                 if data_type.upper() in ["DATE", "DATETIME", "TIME", "TIMESTAMP", "TIMESTAMP_LTZ(9)", "TIMESTAMP_NTZ", "TIMESTAMP_TZ"]:
                     time_dimension_entry = {
                         "name": column,
@@ -430,10 +402,6 @@ def show_table_definition_page():
                         "expr": column,
                         "description": column_description,
                         "data_type": data_type.upper(),
-                    #    "unique": unique_column,
-                      #  "default_aggregation": "<aggregate function>",
-                      #  "synonyms": ["<array of strings>"],
-               #         "sample_values": [sample_value[0], sample_value[1]]
                     }
                     table_entry["measures"].append(measure_entry)
 
@@ -480,20 +448,34 @@ def reset_app():
 # Main function to control the app
     
 def main():
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Welcome", "Get Started", "Table Definition", 'Chat with your data',  "Reset"])
+    st.sidebar.title("✨ Cortex Analyst ✨")
+    st.sidebar.markdown("*Get instant and accurate insights on your Snowflake data in less than 2 minutes.*")
+
+    st.sidebar.markdown((
+    """
+    With Cortex Analyst, business users can ask questions in natural language and receive direct answers without writing SQL. 
+    
+    This app automates the generation of semantic models using *[Cortex LLM](https://docs.snowflake.com/en/user-guide/snowflake-cortex/llm-functions)*, accelerating the delivery of high-precision, self-serve conversational analytics.
+    """
+))
+
+    st.sidebar.subheader("🔎 Navigation")
+
+    page = st.sidebar.radio("Go to", ["Welcome", "Getting Started", "Table Definition", 'Chat with Your Data',  "Reset"])
 
     if page == "Welcome":
         show_welcome_page()
-    elif page == "Get Started":
+    elif page == "Getting Started":
         show_get_started_page()
     elif page == "Table Definition":
         show_table_definition_page()
-    elif page == 'Chat with your data':
+    elif page == 'Chat with Your Data':
         show_cortex_analyst_page()
     elif page == "Reset":
         reset_app()
 
+    st.sidebar.markdown('''<hr>''', unsafe_allow_html=True)
+    st.sidebar.caption("More documentation on [Cortex Analyst](https://docs.snowflake.com/en/user-guide/snowflake-cortex/cortex-analyst)")
 
 # Auto-navigation based on session state
     if 'page' in st.session_state and st.session_state['page'] == "Table Definition":
